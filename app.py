@@ -6,12 +6,17 @@ from dotenv import load_dotenv
 from langchain_groq import ChatGroq
 from langchain_core.prompts import PromptTemplate
 from langchain_core.output_parsers import StrOutputParser
-# from databricks import sql
 
 load_dotenv()
 
+# API Keys from environment variables
 OPENWEATHER_API_KEY = os.getenv("OPENWEATHER_API_KEY")
 GROQ_API_KEY = os.getenv("GROQ_API_KEY")
+
+# Databricks secrets (using environment for consistency, or st.secrets if preferred)
+DATABRICKS_HOST = os.getenv("DATABRICKS_HOST")
+DATABRICKS_TOKEN = os.getenv("DATABRICKS_TOKEN")
+DATABRICKS_HTTP_PATH = os.getenv("DATABRICKS_HTTP_PATH")
 
 def extract_city(text):
     match = re.search(r'\bin\s+([A-Za-z\s]+)', text, re.IGNORECASE)
@@ -47,7 +52,7 @@ prompt = PromptTemplate.from_template(
 chain = prompt | llm | StrOutputParser()
 
 st.set_page_config(page_title="Weather Agent", page_icon="⛅")
-st.title("⛅ Weather Agent - Llama 4 + Databricks")
+st.title("⛅ Weather Agent - Llama 3.3 + Databricks")
 # ----- DATABRICKS CONNECTION TEST -----
 import pandas as pd
 from databricks import sql
@@ -55,9 +60,9 @@ from databricks import sql
 if st.sidebar.button("Test Databricks Connection"):
     try:
         with sql.connect(
-            server_hostname=os.getenv("DATABRICKS_HOST"),
-            http_path=os.getenv("DATABRICKS_HTTP_PATH"),
-            access_token=os.getenv("DATABRICKS_TOKEN")
+            server_hostname=DATABRICKS_HOST,
+            http_path=DATABRICKS_HTTP_PATH,
+            access_token=DATABRICKS_TOKEN
         ) as connection:
             with connection.cursor() as cursor:
                 cursor.execute("SELECT current_date() as today, 1+1 as test_calc")
