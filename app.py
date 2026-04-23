@@ -22,7 +22,17 @@ def extract_city(text):
     return words[-1] if words else "Hyderabad"
 
 def get_weather(city):
-    url = f"http://api.openweathermap.org/data/2.5/weather?q={city}&appid={OPENWEATHER_API_KEY}&units=metric"
+    # Try with country code for common cities
+    city_map = {
+        "Singapore": "Singapore, SG",
+        "Hyderabad": "Hyderabad, IN",
+        "Mumbai": "Mumbai, IN",
+        "Delhi": "Delhi, IN"
+    }
+
+    city_query = city_map.get(city.lower(), city)
+    url = f"http://api.openweathermap.org/data/2.5/weather?q={city_query}&appid={OPENWEATHER_API_KEY}&units=metric"
+
     try:
         response = requests.get(url, timeout=5)
         if response.status_code == 200:
@@ -30,10 +40,10 @@ def get_weather(city):
             return {
                 'temp': data['main']['temp'],
                 'desc': data['weather'][0]['description'],
-                'rain': data.get('pop', 0) * 100 if 'pop' in data else data.get('rain', {}).get('1h', 0)
+                'rain': data.get('clouds', {}).get('all', 0) # using cloud % as rain proxy
             }, None
         else:
-            return None, f"City not found: {city}"
+            return None, f"City not found: {city}. API said: {response.json().get('message')}"
     except Exception as e:
         return None, f"Weather API error: {e}"
 
