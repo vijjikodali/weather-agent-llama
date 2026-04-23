@@ -5,11 +5,12 @@ import pandas as pd
 from databricks import sql
 
 # All keys from Streamlit Secrets
-OPENWEATHER_API_KEY = st.secrets["OPENWEATHER_API_KEY"]
 DATABRICKS_HOST = st.secrets["DATABRICKS_HOST"]
 DATABRICKS_TOKEN = st.secrets["DATABRICKS_TOKEN"]
-DATABRICKS_HTTP_PATH = st.secrets["DATABRICKS_HTTP_PATH"]
-DATABRICKS_ENDPOINT = st.secrets["DATABRICKS_ENDPOINT"] # e.g. "databricks-llama-4-maverick"
+DATABRICKS_ENDPOINT = st.secrets["DATABRICKS_ENDPOINT"]
+
+# Build the URL properly
+DATABRICKS_MODEL_URL = f"https://{DATABRICKS_HOST}/serving-endpoints/{DATABRICKS_ENDPOINT}/invocations"
 
 def extract_city(text):
     match = re.search(r'\bin\s+([A-Za-z\s]+)', text, re.IGNORECASE)
