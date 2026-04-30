@@ -5,9 +5,13 @@ import pandas as pd
 from databricks import sql
 
 # All keys from Streamlit Secrets
+DATABRICKS_HOST = st.secrets["dbc-efb575fe-3817.cloud.databricks.com"]
+DATABRICKS_TOKEN = st.secrets["OPENWEATHER_API_KEY = st.secrets["27d2aad3e92bac30a9929b2f570db79e"]
 DATABRICKS_HOST = st.secrets["DATABRICKS_HOST"]
 DATABRICKS_TOKEN = st.secrets["DATABRICKS_TOKEN"]
-DATABRICKS_ENDPOINT = st.secrets["DATABRICKS_ENDPOINT"]
+DATABRICKS_HTTP_PATH = st.secrets["/sql/1.0/warehouses/4945f74d9ad52cfb"]
+DATABRICKS_ENDPOINT = st.secrets["DATABRICKS_ENDPOINT"] # e.g. "databricks-llama-4-maverick"
+
 
 # Build the URL properly
 DATABRICKS_MODEL_URL = f"https://{DATABRICKS_HOST}/serving-endpoints/{DATABRICKS_ENDPOINT}/invocations"
