@@ -10,6 +10,19 @@ DATABRICKS_HTTP_PATH = st.secrets["DATABRICKS_HTTP_PATH"]
 DATABRICKS_ENDPOINT = st.secrets["DATABRICKS_ENDPOINT"]
 OPENWEATHER_API_KEY = st.secrets["OPENWEATHER_API_KEY"]
 
+st.set_page_config(page_title="Weather Agent", page_icon="⛅", layout="centered")
+
+# ----- HEADER WITH PHOTO -----
+col1, col2 = st.columns([1, 4])
+with col1:
+    st.image("photo.jpg", width=90)
+with col2:
+    st.title("⛅ Weather Agent")
+    st.caption("Built by Vijayalaxmi Kodali | [LinkedIn](https://www.linkedin.com/in/kodali-vijayalaxmi-40860222) | [GitHub](https://github.com/vijjikodali/weather-agent-llama)")
+
+st.divider()
+# ----- END HEADER -----
+
 def extract_city(text):
     match = re.search(r'\bin\s+([A-Za-z\s]+)', text, re.IGNORECASE)
     if match:
@@ -36,7 +49,8 @@ def get_weather(city):
             return {
                 'temp': data['main']['temp'],
                 'desc': data['weather'][0]['description'],
-                'rain': data.get('clouds', {}).get('all', 0)
+                'rain': data.get('clouds', {}).get('all', 0),
+                'icon': data['weather'][0]['icon']
             }, None
         else:
             return None, f"City not found: {city}. API said: {response.json().get('message')}"
@@ -44,25 +58,19 @@ def get_weather(city):
         return None, f"Weather API error: {e}"
 
 def call_databricks_llm(query, temp, desc, rain):
-    """Call Databricks AI Gateway endpoint"""
     headers = {
         "Authorization": f"Bearer {DATABRICKS_TOKEN}",
         "Content-Type": "application/json"
     }
-
     prompt = f"""User asks: {query}
 Weather: {temp}°C, {desc}, {rain}% rain chance.
 Give a short, friendly suggestion for their activity. Mention if they need umbrella/jacket. Keep under 40 words."""
-
     payload = {
         "model": "databricks-meta-llama-3-1-70b-instruct",
-        "messages": [
-            {"role": "user", "content": prompt}
-        ],
+        "messages": [{"role": "user", "content": prompt}],
         "max_tokens": 60,
         "temperature": 0.2
     }
-
     try:
         response = requests.post(DATABRICKS_ENDPOINT, headers=headers, json=payload, timeout=30)
         if response.status_code == 200:
@@ -73,47 +81,62 @@ Give a short, friendly suggestion for their activity. Mention if they need umbre
     except Exception as e:
         return None, f"Databricks LLM error: {e}"
 
-st.set_page_config(page_title="Weather Agent", page_icon="⛅")
-st.title("⛅ Weather Agent - Databricks")
+with st.sidebar:
+    st.subheader("🔧 Dev Tools")
+    if st.button("Test Databricks SQL"):
+        try:
+            with sql.connect(
+                server_hostname=DATABRICKS_HOST,
+                http_path=DATABRICKS_HTTP_PATH,
+                access_token=DATABRICKS_TOKEN,
+                _socket_timeout=60
+            ) as connection:
+                with connection.cursor() as cursor:
+                    cursor.execute("SELECT current_date() as today, 1+1 as test_calc")
+                    result = cursor.fetchall()
+                    st.success(f"SQL Connected ✅ {result[0][0]}, Calc: {result[0][1]}")
+        except Exception as e:
+            st.error(f"Databricks SQL Failed ❌ {e}")
 
-# ----- DATABRICKS SQL CONNECTION TEST -----
-if st.sidebar.button("Test Databricks SQL"):
-    try:
-        with sql.connect(
-            server_hostname=DATABRICKS_HOST,
-            http_path=DATABRICKS_HTTP_PATH,
-            access_token=DATABRICKS_TOKEN,
-            _socket_timeout=60
-        ) as connection:
-            with connection.cursor() as cursor:
-                cursor.execute("SELECT current_date() as today, 1+1 as test_calc")
-                result = cursor.fetchall()
-                st.sidebar.success(f"SQL Connected ✅ {result[0][0]}, Calc: {result[0][1]}")
-    except Exception as e:
-        st.sidebar.error(f"Databricks SQL Failed ❌ {e}")
-        if "timed out" in str(e).lower():
-            st.sidebar.info("Serverless is starting. Wait 10s and click again.")
-# ----- END TEST -----
+st.write("**Quick check:**")
+c1, c2, c3 = st.columns(3)
+if c1.button("🏃 Gym Singapore", use_container_width=True):
+    st.session_state.query = "Gym in Singapore"
+if c2.button("☕ Coffee Hyderabad", use_container_width=True):
+    st.session_state.query = "Coffee in Hyderabad"
+if c3.button("🏖️ Beach Mumbai", use_container_width=True):
+    st.session_state.query = "Beach in Mumbai"
 
-query = st.text_input("Ask about your plans:", placeholder="Tomorrow gym in Hyderabad?")
+query = st.text_input(
+    "Ask about your plans:",
+    placeholder="Tomorrow gym in Hyderabad?",
+    value=st.session_state.get('query', '')
+)
 
-if st.button("Check"):
+if st.button("Check Weather AI", type="primary", use_container_width=True):
     if not query.strip():
         st.warning("Please enter your plan with a city")
     else:
         city = extract_city(query)
-        st.write(f"Checking weather for: {city}")
-
+        st.write(f"Checking weather for: **{city}**")
         weather, err = get_weather(city)
         if err:
             st.error(err)
         else:
             with st.spinner("Asking Databricks LLM..."):
                 suggestion, llm_err = call_databricks_llm(query, weather['temp'], weather['desc'], weather['rain'])
-
             if llm_err:
                 st.error(llm_err)
             else:
-                st.subheader("AI Suggestion:")
-                st.success(suggestion)
-                st.caption(f"Temp: {weather['temp']}°C | Condition: {weather['desc']} | Rain: {weather['rain']}%")
+                col1, col2 = st.columns([1, 3])
+                with col1:
+                    st.image(f"http://openweathermap.org/img/wn/{weather['icon']}@2x.png")
+                with col2:
+                    st.subheader("AI Suggestion")
+                    st.success(suggestion)
+                st.caption(f"🌡️ {weather['temp']}°C | {weather['desc'].title()} | 💧 {weather['rain']}% cloud cover")
+                share_text = f"Weather tip for {city}: {suggestion} \n\nBuilt by Vijayalaxmi Kodali\nTry it: https://weather-agent-llama.streamlit.app"
+                st.text_area("📱 Copy to share:", share_text, height=80)
+
+st.divider()
+st.caption("Made with Streamlit + Databricks + OpenWeather | Built by Vijayalaxmi Kodali")
