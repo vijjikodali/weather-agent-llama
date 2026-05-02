@@ -7,7 +7,7 @@ from databricks import sql
 DATABRICKS_HOST = st.secrets["DATABRICKS_HOST"]
 DATABRICKS_TOKEN = st.secrets["DATABRICKS_TOKEN"]
 DATABRICKS_HTTP_PATH = st.secrets["DATABRICKS_HTTP_PATH"]
-DATABRICKS_ENDPOINT = st.secrets["DATABRICKS_ENDPOINT"] # This is already the full URL
+DATABRICKS_ENDPOINT = st.secrets["DATABRICKS_ENDPOINT"]
 OPENWEATHER_API_KEY = st.secrets["OPENWEATHER_API_KEY"]
 
 def extract_city(text):
@@ -54,7 +54,6 @@ def call_databricks_llm(query, temp, desc, rain):
 Weather: {temp}°C, {desc}, {rain}% rain chance.
 Give a short, friendly suggestion for their activity. Mention if they need umbrella/jacket. Keep under 40 words."""
 
-    # AI Gateway /mlflow/v1/chat/completions format
     payload = {
         "model": "databricks-dbrx-instruct",
         "messages": [
@@ -65,17 +64,22 @@ Give a short, friendly suggestion for their activity. Mention if they need umbre
     }
 
     try:
-        # Use DATABRICKS_ENDPOINT directly. Don't build URL with host.
         response = requests.post(DATABRICKS_ENDPOINT, headers=headers, json=payload, timeout=30)
         if response.status_code == 200:
             result = response.json()
             return result['choices'][0]['message']['content'].strip(), None
         else:
             return None, f"Databricks LLM error {response.status_code}: {response.text}"
-   # ----- DATABRICKS SQL CONNECTION TEST -----
-if st. sidebar.button("Test Databricks SQL"):
+    except Exception as e:
+        return None, f"Databricks LLM error: {e}"
+
+st.set_page_config(page_title="Weather Agent", page_icon="⛅")
+st.title("⛅ Weather Agent - Databricks DBRX")
+
+# ----- DATABRICKS SQL CONNECTION TEST -----
+if st.sidebar.button("Test Databricks SQL"):
     try:
-        with sql. connect(
+        with sql.connect(
             server_hostname=DATABRICKS_HOST,
             http_path=DATABRICKS_HTTP_PATH,
             access_token=DATABRICKS_TOKEN,
@@ -87,18 +91,8 @@ if st. sidebar.button("Test Databricks SQL"):
                 st.sidebar.success(f"SQL Connected ✅ {result[0][0]}, Calc: {result[0][1]}")
     except Exception as e:
         st.sidebar.error(f"Databricks SQL Failed ❌ {e}")
-# ----- END TEST -----
-        with sql.connect(
-            server_hostname=DATABRICKS_HOST,
-            http_path=DATABRICKS_HTTP_PATH,
-            access_token=DATABRICKS_TOKEN
-        ) as connection:
-            with connection.cursor() as cursor:
-                cursor.execute("SELECT current_date() as today, 1+1 as test_calc")
-                result = cursor.fetchall()
-                st.sidebar.success(f"SQL Connected ✅ {result[0][0]}, Calc: {result[0][1]}")
-    except Exception as e:
-        st.sidebar.error(f"Databricks SQL Failed ❌ {e}")
+        if "timed out" in str(e).lower():
+            st.sidebar.info("Serverless is starting. Wait 10s and click again.")
 # ----- END TEST -----
 
 query = st.text_input("Ask about your plans:", placeholder="Tomorrow gym in Hyderabad?")
