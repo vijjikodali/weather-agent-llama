@@ -1,18 +1,14 @@
 import streamlit as st
 import requests
 import re
-import pandas as pd
 from databricks import sql
 
 # All keys from Streamlit Secrets
 DATABRICKS_HOST = st.secrets["DATABRICKS_HOST"]
 DATABRICKS_TOKEN = st.secrets["DATABRICKS_TOKEN"]
 DATABRICKS_HTTP_PATH = st.secrets["DATABRICKS_HTTP_PATH"]
-DATABRICKS_ENDPOINT = st.secrets["DATABRICKS_ENDPOINT"]
+DATABRICKS_ENDPOINT = st.secrets["DATABRICKS_ENDPOINT"] # This is already the full URL
 OPENWEATHER_API_KEY = st.secrets["OPENWEATHER_API_KEY"]
-
-# Build the URL properly
-DATABRICKS_MODEL_URL = f"https://{DATABRICKS_HOST}/serving-endpoints/{DATABRICKS_ENDPOINT}/invocations"
 
 def extract_city(text):
     match = re.search(r'\bin\s+([A-Za-z\s]+)', text, re.IGNORECASE)
@@ -25,17 +21,14 @@ def extract_city(text):
     return words[-1] if words else "Hyderabad"
 
 def get_weather(city):
-    # Try with country code for common cities
     city_map = {
-        "Singapore": "Singapore, SG",
-        "Hyderabad": "Hyderabad, IN",
-        "Mumbai": "Mumbai, IN",
-        "Delhi": "Delhi, IN"
+        "singapore": "Singapore,SG",
+        "hyderabad": "Hyderabad,IN",
+        "mumbai": "Mumbai,IN",
+        "delhi": "Delhi,IN"
     }
-
     city_query = city_map.get(city.lower(), city)
     url = f"http://api.openweathermap.org/data/2.5/weather?q={city_query}&appid={OPENWEATHER_API_KEY}&units=metric"
-
     try:
         response = requests.get(url, timeout=5)
         if response.status_code == 200:
@@ -43,7 +36,7 @@ def get_weather(city):
             return {
                 'temp': data['main']['temp'],
                 'desc': data['weather'][0]['description'],
-                'rain': data.get('clouds', {}).get('all', 0) # using cloud % as rain proxy
+                'rain': data.get('clouds', {}).get('all', 0)
             }, None
         else:
             return None, f"City not found: {city}. API said: {response.json().get('message')}"
@@ -51,8 +44,7 @@ def get_weather(city):
         return None, f"Weather API error: {e}"
 
 def call_databricks_llm(query, temp, desc, rain):
-    """Call Databricks Model Serving endpoint"""
-    url = f"{DATABRICKS_HOST}/serving-endpoints/{DATABRICKS_ENDPOINT}/invocations"
+    """Call Databricks AI Gateway endpoint"""
     headers = {
         "Authorization": f"Bearer {DATABRICKS_TOKEN}",
         "Content-Type": "application/json"
@@ -62,7 +54,9 @@ def call_databricks_llm(query, temp, desc, rain):
 Weather: {temp}°C, {desc}, {rain}% rain chance.
 Give a short, friendly suggestion for their activity. Mention if they need umbrella/jacket. Keep under 40 words."""
 
+    # AI Gateway /mlflow/v1/chat/completions format
     payload = {
+        "model": "databricks-dbrx-instruct",
         "messages": [
             {"role": "user", "content": prompt}
         ],
@@ -71,7 +65,8 @@ Give a short, friendly suggestion for their activity. Mention if they need umbre
     }
 
     try:
-        response = requests.post(url, headers=headers, json=payload, timeout=30)
+        # Use DATABRICKS_ENDPOINT directly. Don't build URL with host.
+        response = requests.post(DATABRICKS_ENDPOINT, headers=headers, json=payload, timeout=30)
         if response.status_code == 200:
             result = response.json()
             return result['choices'][0]['message']['content'].strip(), None
@@ -81,7 +76,7 @@ Give a short, friendly suggestion for their activity. Mention if they need umbre
         return None, f"Databricks LLM error: {e}"
 
 st.set_page_config(page_title="Weather Agent", page_icon="⛅")
-st.title("⛅ Weather Agent - Databricks Llama")
+st.title("⛅ Weather Agent - Databricks DBRX")
 
 # ----- DATABRICKS SQL CONNECTION TEST -----
 if st.sidebar.button("Test Databricks SQL"):
@@ -112,7 +107,7 @@ if st.button("Check"):
         if err:
             st.error(err)
         else:
-            with st.spinner("Asking Databricks Llama..."):
+            with st.spinner("Asking Databricks DBRX..."):
                 suggestion, llm_err = call_databricks_llm(query, weather['temp'], weather['desc'], weather['rain'])
 
             if llm_err:
