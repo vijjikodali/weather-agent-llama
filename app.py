@@ -72,15 +72,22 @@ Give a short, friendly suggestion for their activity. Mention if they need umbre
             return result['choices'][0]['message']['content'].strip(), None
         else:
             return None, f"Databricks LLM error {response.status_code}: {response.text}"
-    except Exception as e:
-        return None, f"Databricks LLM error: {e}"
-
-st.set_page_config(page_title="Weather Agent", page_icon="⛅")
-st.title("⛅ Weather Agent - Databricks DBRX")
-
-# ----- DATABRICKS SQL CONNECTION TEST -----
-if st.sidebar.button("Test Databricks SQL"):
+   # ----- DATABRICKS SQL CONNECTION TEST -----
+if st. sidebar.button("Test Databricks SQL"):
     try:
+        with sql. connect(
+            server_hostname=DATABRICKS_HOST,
+            http_path=DATABRICKS_HTTP_PATH,
+            access_token=DATABRICKS_TOKEN,
+            _socket_timeout=60
+        ) as connection:
+            with connection.cursor() as cursor:
+                cursor.execute("SELECT current_date() as today, 1+1 as test_calc")
+                result = cursor.fetchall()
+                st.sidebar.success(f"SQL Connected ✅ {result[0][0]}, Calc: {result[0][1]}")
+    except Exception as e:
+        st.sidebar.error(f"Databricks SQL Failed ❌ {e}")
+# ----- END TEST -----
         with sql.connect(
             server_hostname=DATABRICKS_HOST,
             http_path=DATABRICKS_HTTP_PATH,
