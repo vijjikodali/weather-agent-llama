@@ -55,7 +55,7 @@ Weather: {temp}°C, {desc}, {rain}% rain chance.
 Give a short, friendly suggestion for their activity. Mention if they need umbrella/jacket. Keep under 40 words."""
 
     payload = {
-        "model": "databricks-dbrx-instruct",
+        "model": "databricks-meta-llama-3-1-70b-instruct",
         "messages": [
             {"role": "user", "content": prompt}
         ],
@@ -74,7 +74,7 @@ Give a short, friendly suggestion for their activity. Mention if they need umbre
         return None, f"Databricks LLM error: {e}"
 
 st.set_page_config(page_title="Weather Agent", page_icon="⛅")
-st.title("⛅ Weather Agent - Databricks DBRX")
+st.title("⛅ Weather Agent - Databricks")
 
 # ----- DATABRICKS SQL CONNECTION TEST -----
 if st.sidebar.button("Test Databricks SQL"):
@@ -108,7 +108,7 @@ if st.button("Check"):
         if err:
             st.error(err)
         else:
-            with st.spinner("Asking Databricks DBRX..."):
+            with st.spinner("Asking Databricks LLM..."):
                 suggestion, llm_err = call_databricks_llm(query, weather['temp'], weather['desc'], weather['rain'])
 
             if llm_err:
