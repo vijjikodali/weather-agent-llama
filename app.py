@@ -15,7 +15,7 @@ st.set_page_config(page_title="Weather Agent", page_icon="⛅", layout="centered
 # ----- HEADER WITH PHOTO -----
 col1, col2 = st.columns([1, 4])
 with col1:
-    st.image("photo.jpg", width=90)
+    st.image("photo.jpg", width=90) # Your profile pic
 with col2:
     st.title("⛅ Weather Agent")
     st.caption("Built by Vijayalaxmi Kodali | [LinkedIn](https://www.linkedin.com/in/kodali-vijayalaxmi-40860222) | [GitHub](https://github.com/vijjikodali/weather-agent-llama)")
