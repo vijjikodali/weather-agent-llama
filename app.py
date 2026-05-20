@@ -116,7 +116,7 @@ if c3.button("🏖️ Beach Mumbai", use_container_width=True):
     st.session_state.query = "Beach in Mumbai"
 
 query = st.chat_input("Tomorrow gym in Hyderabad?")
-)
+
 
 if st.button("Check Weather AI", type="primary", use_container_width=True):
     if not query.strip():
