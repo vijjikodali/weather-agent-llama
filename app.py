@@ -29,7 +29,11 @@ with col2:
     st.caption("Built by Vijayalaxmi Kodali | [LinkedIn](https://www.linkedin.com/in/kodali-vijayalaxmi-40860222) | [GitHub](https://github.com/vijjikodali/weather-agent-llama)")
 
 st.divider()
+
 # ----- END HEADER -----
+# ---------- CHAT MEMORY ----------
+if "messages" not in st.session_state:
+    st.session_state.messages = []
 
 def extract_city(text):
     match = re.search(r'\bin\s+([A-Za-z\s]+)', text, re.IGNORECASE)
@@ -114,7 +118,10 @@ if c2.button("☕ Coffee Hyderabad", use_container_width=True):
     st.session_state.query = "Coffee in Hyderabad"
 if c3.button("🏖️ Beach Mumbai", use_container_width=True):
     st.session_state.query = "Beach in Mumbai"
-
+# Display chat history
+for message in st.session_state.messages:
+    with st.chat_message(message["role"]):
+        st.write(message["content"])
 query = st.chat_input("Tomorrow gym in Hyderabad?")
 
 
