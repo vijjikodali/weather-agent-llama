@@ -126,7 +126,7 @@ query = st.chat_input("Tomorrow gym in Hyderabad?")
 
 
 if st.button("Check Weather AI", type="primary", use_container_width=True):
-    if not query.strip():
+    if not query:
         st.warning("Please enter your plan with a city")
     else:
         city = extract_city(query)
