@@ -212,17 +212,18 @@ Mention umbrella/jacket if needed.
 Keep under 40 words.
 """
 
-payload = {
-    "model": "meta_llama_3_70b_instruct",
-    "messages": [
-        {
-            "role": "user",
-            "content": prompt
-        }
-    ],
-    "max_tokens": 60,
-    "temperature": 0.2
-}
+    payload = {
+        "model": "meta_llama_3_70b_instruct",
+        "messages": [
+            {
+                "role": "user",
+                "content": prompt
+            }
+        ],
+        "max_tokens": 60,
+        "temperature": 0.2
+    }
+
     try:
 
         response = requests.post(
