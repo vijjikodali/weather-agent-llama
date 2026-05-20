@@ -191,7 +191,6 @@ def get_weather(city):
 
         return None, f"Weather API error: {e}"
 
-
 def call_databricks_llm(query, temp, desc, rain):
 
     headers = {
@@ -213,7 +212,6 @@ Keep under 40 words.
 """
 
     payload = {
-        "model": "meta_llama_3_70b_instruct",
         "messages": [
             {
                 "role": "user",
@@ -224,10 +222,15 @@ Keep under 40 words.
         "temperature": 0.2
     }
 
+    url = (
+        "https://dbc-efb575fe-3817.cloud.databricks.com/"
+        "serving-endpoints/llama_v3_2_1b_instruct/invocations"
+    )
+
     try:
 
         response = requests.post(
-            DATABRICKS_ENDPOINT,
+            url,
             headers=headers,
             json=payload,
             timeout=30
@@ -237,10 +240,7 @@ Keep under 40 words.
 
             result = response.json()
 
-            return (
-                result['choices'][0]['message']['content'].strip(),
-                None
-            )
+            return result["choices"][0]["message"]["content"], None
 
         else:
 
@@ -252,44 +252,6 @@ Keep under 40 words.
     except Exception as e:
 
         return None, f"Databricks LLM error: {e}"
-
-
-# =========================
-# SIDEBAR
-# =========================
-with st.sidebar:
-
-    st.subheader("🔧 Dev Tools")
-
-    if st.button("Test Databricks SQL"):
-
-        try:
-
-            with sql.connect(
-                server_hostname=DATABRICKS_HOST,
-                http_path=DATABRICKS_HTTP_PATH,
-                access_token=DATABRICKS_TOKEN,
-                _socket_timeout=60
-            ) as connection:
-
-                with connection.cursor() as cursor:
-
-                    cursor.execute(
-                        "SELECT current_date() as today, 1+1 as test_calc"
-                    )
-
-                    result = cursor.fetchall()
-
-                    st.success(
-                        f"SQL Connected ✅ "
-                        f"{result[0][0]}, "
-                        f"Calc: {result[0][1]}"
-                    )
-
-        except Exception as e:
-
-            st.error(f"Databricks SQL Failed ❌ {e}")
-
 # =========================
 # QUICK PROMPTS
 # =========================
