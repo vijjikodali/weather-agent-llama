@@ -159,8 +159,8 @@ Mention umbrella/jacket if needed.
 Keep under 40 words.
 """
 
+    # FIXED PAYLOAD FOR AI GATEWAY
     payload = {
-        "model": "databricks-meta-llama-3-1-70b-instruct",
         "messages": [
             {
                 "role": "user",
@@ -187,7 +187,10 @@ Keep under 40 words.
             return result['choices'][0]['message']['content'].strip(), None
 
         else:
-            return None, f"Databricks LLM error {response.status_code}"
+            return None, (
+                f"Databricks LLM error "
+                f"{response.status_code}: {response.text}"
+            )
 
     except Exception as e:
         return None, f"Databricks LLM error: {e}"
