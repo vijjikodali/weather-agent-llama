@@ -115,10 +115,7 @@ if c2.button("☕ Coffee Hyderabad", use_container_width=True):
 if c3.button("🏖️ Beach Mumbai", use_container_width=True):
     st.session_state.query = "Beach in Mumbai"
 
-query = st.text_input(
-    "Ask about your plans:",
-    placeholder="Tomorrow gym in Hyderabad?",
-    value=st.session_state.get('query', '')
+query = st.chat_input("Tomorrow gym in Hyderabad?")
 )
 
 if st.button("Check Weather AI", type="primary", use_container_width=True):
