@@ -7,9 +7,9 @@ with sync_playwright() as p:
     
     # 1. Page Loads
     print("Step 1: Loading page...")
-    page.goto("http://localhost:8501")
-    page.wait_for_load_state("networkidle")
-    print("Page loaded ✅")
+  pythonpage.goto("http://localhost:8501")
+page.wait_for_selector("h1", timeout=15000)  # wait for the title to appear
+page.screenshot(path="screenshots/homepage.png")
     
     # 2. UI Check - take screenshot
     print("Step 2: Taking screenshot...")
