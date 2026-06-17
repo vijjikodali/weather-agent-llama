@@ -1,11 +1,8 @@
 streamlit
 requests
-pandasstreamlit
-requests
 pandas
 databricks-sql-connector
-playwright
-pytest
+
 
 
 
