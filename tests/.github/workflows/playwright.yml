@@ -1,0 +1,30 @@
+name: Playwright E2E Regression Testing
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  run-playwright:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout Code Repository
+      uses: actions/checkout@v4
+
+    - name: Set up Python Environment
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.10'
+
+    - name: Install Application & Test Dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install -r requirements.txt
+        pip install -r requirements-test.txt
+
+    - name: Install Playwright Headless Browsers
+      run: python -m playwright install --with-deps
+
+    - name: Execute Playwright Automation Suite
+      run: pytest test_weather_agent.py
