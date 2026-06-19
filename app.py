@@ -2,10 +2,14 @@ import streamlit as st
 import requests
 import re
 import os
-from databricks import sql
 
 # =========================
-# STREAMLIT PAGE CONFIG
+# ENV (CI / PROD SWITCH)
+# =========================
+ENV = os.getenv("ENV", "prod")
+
+# =========================
+# STREAMLIT CONFIG
 # =========================
 st.set_page_config(
     page_title="Weather Agent",
@@ -16,393 +20,166 @@ st.set_page_config(
 # =========================
 # SECRETS
 # =========================
-DATABRICKS_HOST = st.secrets["DATABRICKS_HOST"]
-DATABRICKS_TOKEN = st.secrets["DATABRICKS_TOKEN"]
-DATABRICKS_HTTP_PATH = st.secrets["DATABRICKS_HTTP_PATH"]
-DATABRICKS_ENDPOINT = st.secrets["DATABRICKS_ENDPOINT"]
 OPENWEATHER_API_KEY = st.secrets["OPENWEATHER_API_KEY"]
+DATABRICKS_TOKEN = st.secrets["DATABRICKS_TOKEN"]
+DATABRICKS_ENDPOINT = st.secrets["DATABRICKS_ENDPOINT"]
 
 # =========================
-# CHAT MEMORY
+# SESSION STATE
 # =========================
 if "messages" not in st.session_state:
     st.session_state.messages = []
 
 # =========================
-# CUSTOM CSS
+# STYLES
 # =========================
 st.markdown("""
 <style>
-
 .stApp {
     background: linear-gradient(to bottom right, #0f172a, #1e293b);
     color: white;
 }
-
 [data-testid="stChatMessage"] {
-    background-color: rgba(255,255,255,0.06);
+    background: rgba(255,255,255,0.06);
     padding: 14px;
     border-radius: 14px;
     margin-bottom: 10px;
 }
-
 .stButton > button {
     border-radius: 12px;
     font-weight: bold;
 }
-
 </style>
 """, unsafe_allow_html=True)
 
-# =========================
-# HEADER
-# =========================
-col1, col2 = st.columns([1, 4])
-
-with col1:
-
-    if os.path.exists("photo.jpg"):
-
-        try:
-            st.image("photo.jpg", width=90)
-
-        except Exception:
-            st.image(
-                "https://github.com/vijjikodali.png",
-                width=90
-            )
-
-    else:
-        st.image(
-            "https://github.com/vijjikodali.png",
-            width=90
-        )
-
-with col2:
-
-    st.title("⛅ Weather Agent")
-
-    st.caption(
-        "Built by Vijayalaxmi Kodali | "
-        "[LinkedIn](https://www.linkedin.com/in/kodali-vijayalaxmi-40860222) | "
-        "[GitHub](https://github.com/vijjikodali/weather-agent-llama)"
-    )
-
-st.divider()
+st.title("⛅ Weather Agent")
 
 # =========================
-# FUNCTIONS
+# UTIL: CITY EXTRACTION
 # =========================
-
-def extract_city(text):
-
-    match = re.search(
-        r'\bin\s+([A-Za-z\s]+)',
-        text,
-        re.IGNORECASE
-    )
-
+def extract_city(text: str):
+    match = re.search(r"\bin\s+([A-Za-z\s]+)", text, re.I)
     if match:
+        return match.group(1).strip()
+    return text.split()[-1] if text else "Hyderabad"
 
-        city = match.group(1).strip()
-
-        city = re.sub(
-            r'\b(tomorrow|today|now|weekend|morning|evening|tonight)\b.*',
-            '',
-            city,
-            flags=re.IGNORECASE
-        ).strip()
-
-        city = city.strip('?.,!')
-
-        return city
-
-    words = text.replace('?', '').split()
-
-    return words[-1] if words else "Hyderabad"
-
-
-def get_weather(city):
-
-    city_map = {
-
-        "singapore": "Singapore,SG",
-        "sg": "Singapore,SG",
-
-        "hyderabad": "Hyderabad,IN",
-        "hyderbad": "Hyderabad,IN",
-        "hydrabad": "Hyderabad,IN",
-
-        "mumbai": "Mumbai,IN",
-        "bombay": "Mumbai,IN",
-
-        "delhi": "Delhi,IN",
-        "new delhi": "Delhi,IN",
-
-        "bangalore": "Bengaluru,IN",
-        "bengaluru": "Bengaluru,IN",
-
-        "chennai": "Chennai,IN",
-
-        "pune": "Pune,IN",
-
-        "kolkata": "Kolkata,IN",
-
-        "dubai": "Dubai,AE",
-
-        "london": "London,GB",
-
-        "new york": "New York,US"
-    }
-
-    city_query = city_map.get(
-        city.lower(),
-        city
-    )
-
-    url = (
-        f"http://api.openweathermap.org/data/2.5/weather?"
-        f"q={city_query}&appid={OPENWEATHER_API_KEY}&units=metric"
-    )
+# =========================
+# WEATHER API
+# =========================
+def get_weather(city: str):
+    url = f"http://api.openweathermap.org/data/2.5/weather?q={city}&appid={OPENWEATHER_API_KEY}&units=metric"
 
     try:
+        r = requests.get(url, timeout=5)
 
-        response = requests.get(
-            url,
-            timeout=5
-        )
+        if r.status_code != 200:
+            return None, "City not found"
 
-        if response.status_code == 200:
+        data = r.json()
 
-            data = response.json()
-
-            return {
-                'temp': data['main']['temp'],
-                'desc': data['weather'][0]['description'],
-                'rain': data.get('clouds', {}).get('all', 0),
-                'icon': data['weather'][0]['icon']
-            }, None
-
-        else:
-
-            return None, f"City not found: {city}"
+        return {
+            "temp": data["main"]["temp"],
+            "desc": data["weather"][0]["description"],
+            "clouds": data.get("clouds", {}).get("all", 0),
+            "icon": data["weather"][0]["icon"]
+        }, None
 
     except Exception as e:
+        return None, str(e)
 
-        return None, f"Weather API error: {e}"
+# =========================
+# LLM (CI + PROD SAFE)
+# =========================
+def call_llm(query, temp, desc, clouds):
 
-def call_databricks_llm(query, temp, desc, rain):
+    # CI MODE → NO EXTERNAL CALL
+    if ENV == "ci":
+        return "☔ Mock response: carry umbrella if needed.", None
 
     headers = {
         "Authorization": f"Bearer {DATABRICKS_TOKEN}",
         "Content-Type": "application/json"
     }
 
-    prompt = f"""
-User asks: {query}
-
-Weather:
-- Temperature: {temp}°C
-- Condition: {desc}
-- Cloud cover: {rain}%
-
-Give a short, friendly suggestion.
-Mention umbrella/jacket if needed.
-Keep under 40 words.
-"""
-
     payload = {
-        "messages": [
-            {
-                "role": "user",
-                "content": prompt
-            }
-        ],
+        "messages": [{
+            "role": "user",
+            "content": f"{query} | Temp:{temp}°C | {desc} | Clouds:{clouds}%"
+        }],
         "max_tokens": 60,
         "temperature": 0.2
     }
 
-    url = (
-        "https://dbc-efb575fe-3817.cloud.databricks.com/"
-        "serving-endpoints/llama_v3_2_1b_instruct/invocations"
-    )
-
     try:
+        r = requests.post(DATABRICKS_ENDPOINT, headers=headers, json=payload, timeout=30)
 
-        response = requests.post(
-            url,
-            headers=headers,
-            json=payload,
-            timeout=30
-        )
+        if r.status_code == 200:
+            return r.json()["choices"][0]["message"]["content"], None
 
-        if response.status_code == 200:
-
-            result = response.json()
-
-            return result["choices"][0]["message"]["content"], None
-
-        else:
-
-            return None, (
-                f"Databricks LLM error "
-                f"{response.status_code}: {response.text}"
-            )
+        return None, r.text
 
     except Exception as e:
+        return None, str(e)
 
-        return None, f"Databricks LLM error: {e}"
 # =========================
-# QUICK PROMPTS
+# QUICK ACTIONS
 # =========================
 st.write("### Quick Prompts")
 
-c1, c2, c3 = st.columns(3)
+col1, col2, col3 = st.columns(3)
 
-if c1.button(
-    "🏃 Gym Singapore",
-    use_container_width=True
-):
-    st.session_state.quick_prompt = "Gym in Singapore"
+if col1.button("🏃 Gym Singapore", key="gym"):
+    st.session_state.quick = "Gym in Singapore"
 
-if c2.button(
-    "☕ Coffee Hyderabad",
-    use_container_width=True
-):
-    st.session_state.quick_prompt = "Coffee in Hyderabad"
+if col2.button("☕ Coffee Hyderabad", key="coffee"):
+    st.session_state.quick = "Coffee in Hyderabad"
 
-if c3.button(
-    "🏖️ Beach Mumbai",
-    use_container_width=True
-):
-    st.session_state.quick_prompt = "Beach in Mumbai"
+if col3.button("🏖️ Beach Mumbai", key="beach"):
+    st.session_state.quick = "Beach in Mumbai"
 
 # =========================
-# DISPLAY CHAT HISTORY
+# CHAT HISTORY
 # =========================
-for message in st.session_state.messages:
-
-    with st.chat_message(message["role"]):
-
-        st.write(message["content"])
+for msg in st.session_state.messages:
+    with st.chat_message(msg["role"]):
+        st.write(msg["content"])
 
 # =========================
-# CHAT INPUT
+# INPUT
 # =========================
 query = st.chat_input(
-    st.session_state.get(
-        "quick_prompt",
-        "Tomorrow gym in Singapore?"
-    )
+    st.session_state.get("quick", "Weather in Singapore?")
 )
 
 # =========================
-# MAIN CHAT FLOW
+# MAIN FLOW
 # =========================
 if query:
 
-    # Save user message
-    st.session_state.messages.append(
-        {
-            "role": "user",
-            "content": query
-        }
-    )
-
-    # Show user message
-    with st.chat_message("user"):
-
-        st.write(query)
+    st.session_state.messages.append({"role": "user", "content": query})
 
     city = extract_city(query)
-
     weather, err = get_weather(city)
 
-    if err:
+    with st.chat_message("assistant"):
 
-        with st.chat_message("assistant"):
-
+        if err:
             st.error(err)
-
-    else:
-
-        with st.chat_message("assistant"):
-
-            with st.spinner(
-                "🌦️ AI Weather Agent thinking..."
-            ):
-
-                suggestion, llm_err = call_databricks_llm(
-                    query,
-                    weather['temp'],
-                    weather['desc'],
-                    weather['rain']
-                )
+        else:
+            result, llm_err = call_llm(
+                query,
+                weather["temp"],
+                weather["desc"],
+                weather["clouds"]
+            )
 
             if llm_err:
-
                 st.error(llm_err)
-
             else:
+                st.image(f"http://openweathermap.org/img/wn/{weather['icon']}@2x.png")
+                st.success(result)
 
-                st.image(
-                    f"http://openweathermap.org/img/wn/{weather['icon']}@2x.png",
-                    width=80
-                )
-
-                st.success(suggestion)
-
-                c1, c2, c3 = st.columns(3)
-
-                c1.metric(
-                    "🌡️ Temp",
-                    f"{weather['temp']}°C"
-                )
-
-                c2.metric(
-                    "☁️ Weather",
-                    weather['desc']
-                )
-
-                c3.metric(
-                    "💧 Clouds",
-                    f"{weather['rain']}%"
-                )
-
-                assistant_reply = f"""
-{suggestion}
-
-🌡️ Temp: {weather['temp']}°C
-☁️ Condition: {weather['desc']}
-💧 Clouds: {weather['rain']}%
-"""
-
-                # Save assistant response
-                st.session_state.messages.append(
-                    {
-                        "role": "assistant",
-                        "content": assistant_reply
-                    }
-                )
-
-                share_text = f"""
-Weather tip for {city}: {suggestion}
-
-Built by Vijayalaxmi Kodali
-
-Try it:
-https://weather-agent-llama.streamlit.app
-"""
-
-                st.text_area(
-                    "📱 Copy to share:",
-                    share_text,
-                    height=120
-                )
-
-st.divider()
-
-st.caption(
-    "Made with Streamlit + Databricks + OpenWeather | "
-    "Built by Vijayalaxmi Kodali"
-)
+                st.session_state.messages.append({
+                    "role": "assistant",
+                    "content": result
+                })
