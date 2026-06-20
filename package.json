@@ -1,0 +1,26 @@
+{
+  "name": "weather-agent-llama",
+  "version": "1.0.0",
+  "description": "AI weather advisor using Groq Llama 3.3 + OpenWeather API. Logs user queries to Databricks for analytics. Built with Streamlit + Python. # Weather Agent - Llama 4 + Databricks",
+  "main": "index.js",
+  "directories": {
+    "test": "tests"
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/vijjikodali/weather-agent-llama.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/vijjikodali/weather-agent-llama/issues"
+  },
+  "homepage": "https://github.com/vijjikodali/weather-agent-llama#readme",
+  "devDependencies": {
+    "@playwright/test": "^1.61.0"
+  }
+}

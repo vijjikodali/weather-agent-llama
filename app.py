@@ -102,8 +102,8 @@ st.markdown(
 with st.sidebar:
     st.image("https://github.com/vijjikodali.png", width=140)
 
-    st.markdown("### Ravi Kumar")
-    st.markdown("Solution Architect")
+   st.markdown("### vijjikodali")
+st.markdown("Weather Agent Creator")
 
     st.markdown("---")
     st.success("✅ Databricks Serverless - Live Tested")
@@ -119,7 +119,7 @@ with st.sidebar:
 # HEADER
 # =========================
 st.title("⛅ Weather Agent")
-st.caption("Built by Ravi Kumar | Databricks Serverless AI + OpenWeather API")
+st.caption("Built by vijjikodali | Databricks Serverless AI + OpenWeather API")
 
 
 # =========================
@@ -401,7 +401,7 @@ st.markdown("---")
 st.markdown(
     """
     <div style='text-align:center'>
-        Built by <b>Ravi Kumar</b><br>
+        Built by <b>vijjikodali</b><br>
         Powered by Databricks Serverless AI + OpenWeather API<br><br>
         <a href='https://github.com/vijjikodali/weather-agent-llama'>
             GitHub Repository
