@@ -6,9 +6,7 @@
   "directories": {
     "test": "tests"
   },
-  "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
-  },
+  "scripts": {},
   "repository": {
     "type": "git",
     "url": "git+https://github.com/vijjikodali/weather-agent-llama.git"
@@ -21,6 +19,7 @@
   },
   "homepage": "https://github.com/vijjikodali/weather-agent-llama#readme",
   "devDependencies": {
-    "@playwright/test": "^1.61.0"
+    "@playwright/test": "^1.61.0",
+    "@types/node": "^26.0.0"
   }
 }
