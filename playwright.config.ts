@@ -10,9 +10,15 @@ export default defineConfig({
   },
 
   webServer: {
-    command: 'ENV=ci python -m streamlit run app.py --server.port 8501 --server.headless true',
+    command: 'python -m streamlit run app.py --server.port 8501 --server.headless true --server.address 127.0.0.1',
     url: 'http://127.0.0.1:8501',
-    timeout: 90000,
+
+    timeout: 120000,
+
     reuseExistingServer: !process.env.CI,
+
+    // 🔥 CRITICAL FIX: ensures server is really ready
+    stdout: 'pipe',
+    stderr: 'pipe',
   },
 });

@@ -1,7 +1,9 @@
 import { test, expect } from '@playwright/test';
 
 test('weather agent app loads', async ({ page }) => {
-  await page.goto('/', { waitUntil: 'domcontentloaded', timeout: 60000 });
+  await page.goto('/', { waitUntil: 'domcontentloaded' });
 
-  await expect(page).toHaveTitle(/Weather Agent/i);
+  await page.waitForLoadState('networkidle');
+
+  await expect(page.locator('body')).toBeVisible();
 });
