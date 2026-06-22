@@ -15,50 +15,59 @@ jobs:
       ENV: ci
 
     steps:
+      # ======================
+      # CHECKOUT CODE
+      # ======================
       - name: Checkout repo
         uses: actions/checkout@v4
 
       # ======================
-      # NODE + PLAYWRIGHT
+      # SETUP PYTHON (for Streamlit app)
+      # ======================
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install Python dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      # ======================
+      # SETUP NODE + PLAYWRIGHT
       # ======================
       - name: Setup Node
         uses: actions/setup-node@v4
         with:
           node-version: lts/*
 
-      - name: Install dependencies
+      - name: Install Node dependencies
         run: npm ci
 
-      - name: Install Playwright Browsers
+      - name: Install Playwright browsers
         run: npx playwright install --with-deps
 
-      
       # ======================
-      # RUN TESTS
+      # RUN PLAYWRIGHT TESTS
+      # (Streamlit is started by webServer in config)
       # ======================
       - name: Run Playwright tests
         run: npx playwright test
 
       # ======================
-      # REPORTS (ALWAYS RUN)
+      # ARTIFACTS (always upload)
       # ======================
-      - name: Upload Playwright HTML Report
+      - name: Upload Playwright HTML report
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: playwright-report
           path: playwright-report/
 
-      - name: Upload Test Results
+      - name: Upload test results
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: test-results
           path: test-results/
-
-      - name: Upload App Logs
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: streamlit-logs
-          path: app.log
