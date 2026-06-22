@@ -11,5 +11,13 @@ export default defineConfig({
 
   reporter: [['html', { open: 'never' }]],
 
- 
+  // ======================
+  // START STREAMLIT APP
+  // ======================
+  webServer: {
+    command: 'python -m streamlit run app.py --server.port 8501 --server.address 127.0.0.1',
+    url: 'http://127.0.0.1:8501',
+    reuseExistingServer: false,
+    timeout: 120 * 1000
+  }
 });
