@@ -46,24 +46,25 @@ jobs:
         run: npx playwright install --with-deps
 
       # ======================
-      # START STREAMLIT APP
-      # ======================
       - name: Start Streamlit app
-        run: |
-          nohup python -m streamlit run app.py --server.port 8501 --server.headless true > app.log 2>&1 &
+  run: |
+    nohup python -m streamlit run app.py \
+    --server.address 0.0.0.0 \
+    --server.port 8501 \
+    --server.headless true > app.log 2>&1 & --server.headless true > app.log 2>&1 &
 
       # ======================
       # WAIT FOR APP
       # ======================
-      - name: Wait for app
-        run: |
-          for i in {1..30}; do
-            curl -s http://127.0.0.1:8501 && echo "READY" && exit 0
-            sleep 2
-          done
-          echo "App failed to start"
-          cat app.log
-          exit 1
+   - name: Wait for app
+  run: |
+    for i in {1..60}; do
+      curl -s http://localhost:8501 | grep "streamlit" && echo "READY" && exit 0
+      sleep 2
+    done
+    echo "FAILED"
+    cat app.log
+    exit 1
 
       # ======================
       # RUN TESTS
