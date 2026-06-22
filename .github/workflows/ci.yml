@@ -52,30 +52,27 @@ jobs:
       # ======================
       # START STREAMLIT APP
       # ======================
-      - name: Start Streamlit app
-        run: |
-          nohup python -m streamlit run app.py \
-          --server.address 0.0.0.0 \
-          --server.port 8501 \
-          --server.headless true > app.log 2>&1 &
-
       # ======================
-      # WAIT FOR APP (STABLE)
-      # ======================
-      - name: Wait for app
-        run: |
-          for i in {1..60}; do
-            if curl -s http://127.0.0.1:8501 | grep -i "streamlit"; then
-              echo "READY"
-              exit 0
-            fi
-            sleep 2
-          done
+# START STREAMLIT APP
+# ======================
+- name: Start Streamlit App
+  run: |
+    nohup streamlit run app.py \
+    --server.port 8501 \
+    --server.address 0.0.0.0 \
+    --server.headless true > app.log 2>&1 &
 
-          echo "FAILED"
-          cat app.log
-          exit 1
-
+# ======================
+# WAIT FOR APP READY
+# ======================
+  run: |
+    for i in {1..30}; do
+      curl -s http://127.0.0.1:8501 && echo "App ready" && exit 0
+      sleep 2
+    done
+    echo "App failed to start"
+    cat app.log
+    exit 1
       # ======================
       # RUN TESTS
       # ======================

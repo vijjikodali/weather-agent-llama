@@ -32,26 +32,7 @@ jobs:
       - name: Install Playwright Browsers
         run: npx playwright install --with-deps
 
-      # ======================
-      # START STREAMLIT APP
-      # ======================
-      - name: Start Streamlit App
-        run: |
-          nohup streamlit run app.py --server.port 8501 --server.headless true > app.log 2>&1 &
-
-      # ======================
-      # WAIT FOR APP READY
-      # ======================
-      - name: Wait for App
-        run: |
-          for i in {1..30}; do
-            curl -s http://127.0.0.1:8501 && echo "App ready" && exit 0
-            sleep 2
-          done
-          echo "App failed to start"
-          cat app.log
-          exit 1
-
+      
       # ======================
       # RUN TESTS
       # ======================
