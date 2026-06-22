@@ -1,18 +1,20 @@
 import { test, expect } from '@playwright/test';
 
-test('has title', async ({ page }) => {
-  await page.goto('https://playwright.dev/');
+test('Weather app loads successfully', async ({ page }) => {
+  await page.goto('/');
 
-  // Expect a title "to contain" a substring.
-  await expect(page).toHaveTitle(/Playwright/);
-});
+  // wait for app
+  await page.waitForTimeout(3000);
 
-test('get started link', async ({ page }) => {
-  await page.goto('https://playwright.dev/');
+  const body = await page.locator('body').innerText();
 
-  // Click the get started link.
-  await page.getByRole('link', { name: 'Get started' }).click();
+  // basic stability check only
+  expect(body.length).toBeGreaterThan(20);
+  expect(body).toBeTruthy();
 
-  // Expects page to have a heading with the name of Installation.
-  await expect(page.getByRole('heading', { name: 'Installation' })).toBeVisible();
+  // UI sanity (NOT AI dependent)
+  expect(
+    body.toLowerCase().includes('weather') ||
+    body.toLowerCase().includes('streamlit')
+  ).toBeTruthy();
 });

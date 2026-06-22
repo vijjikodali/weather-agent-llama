@@ -9,16 +9,13 @@ export default defineConfig({
     headless: true,
   },
 
+  reporter: [['html', { open: 'never' }]],
+
   webServer: {
-    command: 'python -m streamlit run app.py --server.port 8501 --server.headless true --server.address 127.0.0.1',
-    url: 'http://127.0.0.1:8501',
+  command: 'python -m streamlit run app.py --server.port 8501 --server.address 127.0.0.1',
+  url: 'http://127.0.0.1:8501',
+  timeout: 180000,
+  reuseExistingServer: false
 
-    timeout: 120000,
-
-    reuseExistingServer: !process.env.CI,
-
-    // 🔥 CRITICAL FIX: ensures server is really ready
-    stdout: 'pipe',
-    stderr: 'pipe',
-  },
+  }
 });
