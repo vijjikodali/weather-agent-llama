@@ -13,28 +13,16 @@ export default defineConfig({
   },
 
   reporter: [['html', { open: 'never' }]],
+webServer: {
+  command: `streamlit run app.py --server.port ${PORT} --server.address 127.0.0.1 --server.headless true`,
+  url: BASE_URL,
 
-  webServer: {
-    command: [
-      // 🔥 kills stale streamlit process first (prevents port conflict)
-      `bash -c "pkill -f streamlit || true &&`,
-      `streamlit run app.py`,
-      `--server.port ${PORT}`,
-      `--server.address 127.0.0.1`,
-      `--server.headless true"`
-    ].join(' '),
+  reuseExistingServer: !process.env.CI,
+  timeout: 180 * 1000,
 
-    url: BASE_URL,
+  stdout: 'pipe',
+  stderr: 'pipe',
 
-    // 🔥 CI-safe isolation
-    reuseExistingServer: false,
-
-    timeout: 180 * 1000,
-
-    stdout: 'pipe',
-    stderr: 'pipe',
-
-    // Playwright will poll until app is ready
-    ignoreHTTPSErrors: true,
-  }
+  ignoreHTTPSErrors: true,
+}
 });
