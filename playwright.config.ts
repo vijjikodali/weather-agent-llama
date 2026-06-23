@@ -1,6 +1,7 @@
 import { defineConfig } from '@playwright/test';
 
-const PORT = process.env.PORT || 8501;
+// 1. Fallback to 8501 if process.env.PORT is undefined
+const PORT = process.env.PORT || '8501';
 const BASE_URL = `http://127.0.0.1:${PORT}`;
 
 export default defineConfig({
@@ -14,18 +15,20 @@ export default defineConfig({
 
   reporter: [['html', { open: 'never' }]],
   
-webServer: {
-  command: `streamlit run app.py --server.port 8501 --server.address 127.0.0.1 --server.headless true`,
+  webServer: {
+    // 2. Use the dynamic PORT variable in the command line string
+    command: `streamlit run app.py --server.port ${PORT} --server.address 127.0.0.1 --server.headless true --browser.gatherUsageStats false`,
 
-  url: "http://127.0.0.1:8501",
+    // 3. Match the target URL perfectly with the dynamic base URL
+    url: BASE_URL,
 
-  reuseExistingServer: false,
+    // 4. Set to true for local development speed; false for clean CI environments
+    reuseExistingServer: !process.env.CI,
 
-  timeout: 180 * 1000,
+    timeout: 60 * 1000, // 60 seconds is more than enough for Streamlit to boot
 
-  stdout: 'pipe',
-  stderr: 'pipe',
-
-  ignoreHTTPSErrors: true,
-}
+    // 5. 'inherit' routes Streamlit crashes/errors directly to your terminal console
+    stdout: 'ignore',
+    stderr: 'inherit',
+  }
 });
