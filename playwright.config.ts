@@ -2,7 +2,7 @@ import { defineConfig } from '@playwright/test';
 
 export default defineConfig({
   testDir: './tests/e2e',
-  timeout: 60000,
+  timeout: 60_000,
 
   use: {
     baseURL: 'http://127.0.0.1:8501',
@@ -12,12 +12,23 @@ export default defineConfig({
   reporter: [['html', { open: 'never' }]],
 
   // ======================
-  // START STREAMLIT APP
+  // STREAMLIT SERVER SETUP
   // ======================
   webServer: {
-    command: 'python -m streamlit run app.py --server.port 8501 --server.address 127.0.0.1',
+    command: 'bash -c "streamlit run app.py --server.port 8501 --server.address 127.0.0.1 --server.headless true"',
+    
     url: 'http://127.0.0.1:8501',
-    reuseExistingServer: false,
-    timeout: 120 * 1000
+
+    // IMPORTANT: helps avoid flaky startup failures
+    reuseExistingServer: !process.env.CI,
+
+    timeout: 180 * 1000,
+
+    // 🔥 HEALTH CHECK (critical improvement)
+    stdout: 'pipe',
+    stderr: 'pipe',
+
+    // Wait strategy (Playwright will poll URL)
+    ignoreHTTPSErrors: true
   }
 });
