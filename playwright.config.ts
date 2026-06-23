@@ -1,34 +1,40 @@
 import { defineConfig } from '@playwright/test';
 
+const PORT = process.env.PORT || 8501;
+const BASE_URL = `http://127.0.0.1:${PORT}`;
+
 export default defineConfig({
   testDir: './tests/e2e',
   timeout: 60_000,
 
   use: {
-    baseURL: 'http://127.0.0.1:8501',
+    baseURL: BASE_URL,
     headless: true,
   },
 
   reporter: [['html', { open: 'never' }]],
 
-  // ======================
-  // STREAMLIT SERVER SETUP
-  // ======================
   webServer: {
-    command: 'bash -c "streamlit run app.py --server.port 8501 --server.address 127.0.0.1 --server.headless true"',
-    
-    url: 'http://127.0.0.1:8501',
+    command: [
+      // 🔥 kills stale streamlit process first (prevents port conflict)
+      `bash -c "pkill -f streamlit || true &&`,
+      `streamlit run app.py`,
+      `--server.port ${PORT}`,
+      `--server.address 127.0.0.1`,
+      `--server.headless true"`
+    ].join(' '),
 
-    // IMPORTANT: helps avoid flaky startup failures
-    reuseExistingServer: !process.env.CI,
+    url: BASE_URL,
+
+    // 🔥 CI-safe isolation
+    reuseExistingServer: false,
 
     timeout: 180 * 1000,
 
-    // 🔥 HEALTH CHECK (critical improvement)
     stdout: 'pipe',
     stderr: 'pipe',
 
-    // Wait strategy (Playwright will poll URL)
-    ignoreHTTPSErrors: true
+    // Playwright will poll until app is ready
+    ignoreHTTPSErrors: true,
   }
 });
