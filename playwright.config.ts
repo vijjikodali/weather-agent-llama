@@ -13,14 +13,16 @@ export default defineConfig({
   },
 
   reporter: [['html', { open: 'never' }]],
+  
 webServer: {
-  command: `bash -c "fuser -k 8501/tcp || true; streamlit run app.py --server.port 8501 --server.address 127.0.0.1 --server.headless true"`,
+  command: `streamlit run app.py --server.port 8501 --server.address 127.0.0.1 --server.headless true`,
 
-  url: BASE_URL,
+  url: "http://127.0.0.1:8501",
 
   reuseExistingServer: false,
 
   timeout: 180 * 1000,
+
   stdout: 'pipe',
   stderr: 'pipe',
 
