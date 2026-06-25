@@ -3,7 +3,7 @@ streamlit==1.32.0
 requests==2.31.0
 
 # Data Processing
-pandas==2.2.0
+pandas==2.3.3
 
 # Databricks Integration
 databricks-sql-connector==2.9.3
