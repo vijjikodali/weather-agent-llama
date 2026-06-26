@@ -26,3 +26,5 @@ node_modules/
 /playwright/.auth/
 .streamlit/secrets.toml
 .env
+.streamlit/secrets.toml
+.env
