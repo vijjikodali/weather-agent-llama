@@ -1,16 +1,14 @@
-# Core App
 streamlit==1.32.0
 requests==2.31.0
 
 # Data Processing
 pandas==2.3.3
 
+# AI
+groq==1.5.0
+
 # Databricks Integration
 databricks-sql-connector==2.9.3
 
 # Environment Management
 python-dotenv==1.0.0
-
-
-
-
