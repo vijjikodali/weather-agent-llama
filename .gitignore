@@ -4,6 +4,15 @@ venv/
 
 # Python cache
 __pycache__/
+*.pyc# Python virtual environment
+venv/
+
+# Secrets
+.env
+.streamlit/secrets.toml
+
+# Python cache
+__pycache__/
 *.pyc
 *.pyo
 
@@ -24,7 +33,24 @@ node_modules/
 /blob-report/
 /playwright/.cache/
 /playwright/.auth/
-.streamlit/secrets.toml
-.env
+*.pyo
+
+# pytest cache
+.pytest_cache/
+
+# Playwright cache
+ms-playwright/
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Playwright
+node_modules/
+/test-results/
+/playwright-report/
+/blob-report/
+/playwright/.cache/
+/playwright/.auth/
 .streamlit/secrets.toml
 .env
