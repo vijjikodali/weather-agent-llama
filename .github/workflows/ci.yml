@@ -46,8 +46,22 @@ jobs:
         with:
           node-version: lts/*
 
+      # ✅ CACHE NPM
+      - name: Cache npm
+        uses: actions/cache@v4
+        with:
+          path: ~/.npm
+          key: ${{ runner.os }}-node-${{ hashFiles('package-lock.json') }}
+
       - name: Install Node dependencies
         run: npm ci
+
+      # ✅ CACHE PLAYWRIGHT BROWSERS
+      - name: Cache Playwright browsers
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/ms-playwright
+          key: ${{ runner.os }}-playwright
 
       - name: Install Playwright browsers
         run: npx playwright install --with-deps

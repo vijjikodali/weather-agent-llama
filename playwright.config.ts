@@ -1,34 +1,46 @@
 import { defineConfig } from '@playwright/test';
 
-// 1. Fallback to 8501 if process.env.PORT is undefined
-const PORT = process.env.PORT || '8501';
-const BASE_URL = `http://127.0.0.1:${PORT}`;
+// 🌍 ONE source of truth for all environments
+const BASE_URL =
+  process.env.BASE_URL || 'http://127.0.0.1:8501';
 
 export default defineConfig({
   testDir: './tests/e2e',
-  timeout: 60_000,
+
+  // ⏱ stability for CI + cloud
+  timeout: 90_000,
+
+  expect: {
+    timeout: 10_000,
+  },
+
+  // 🔁 retry only in CI/cloud
+  retries: process.env.CI ? 2 : 0,
+
+  // ⚡ parallel execution for speed (safe for stateless UI apps like Streamlit)
+  fullyParallel: true,
 
   use: {
     baseURL: BASE_URL,
+
+    // works in:
+    // - local (visible debugging if needed)
+    // - CI (headless)
+    // - cloud runners
     headless: true,
+
+    // 🧠 debugging tools (VERY important for CI failures)
+    trace: 'on-first-retry',
+    screenshot: 'only-on-failure',
+    video: 'retain-on-failure',
+
+    // 🧼 stability for slow cloud environments
+    actionTimeout: 0,
+    navigationTimeout: 60_000,
   },
 
-  reporter: [['html', { open: 'never' }]],
-  
-  webServer: {
-    // 2. Use the dynamic PORT variable in the command line string
-    command: `streamlit run app.py --server.port ${PORT} --server.address 127.0.0.1 --server.headless true --browser.gatherUsageStats false`,
-
-    // 3. Match the target URL perfectly with the dynamic base URL
-    url: BASE_URL,
-
-    // 4. Set to true for local development speed; false for clean CI environments
-    reuseExistingServer: !process.env.CI,
-
-    timeout: 60 * 1000, // 60 seconds is more than enough for Streamlit to boot
-
-    // 5. 'inherit' routes Streamlit crashes/errors directly to your terminal console
-    stdout: 'ignore',
-    stderr: 'inherit',
-  }
+  reporter: [
+    ['list'],
+    ['html', { open: 'never' }]
+  ],
 });
