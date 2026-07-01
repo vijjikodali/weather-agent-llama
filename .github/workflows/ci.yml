@@ -17,12 +17,13 @@ jobs:
       GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
       DATABRICKS_TOKEN: ${{ secrets.DATABRICKS_TOKEN }}
       DATABRICKS_HOST: ${{ secrets.DATABRICKS_HOST }}
+      DATABRICKS_HTTP_PATH: ${{ secrets.DATABRICKS_HTTP_PATH }}
 
     steps:
       # ======================
       # CHECKOUT
       # ======================
-      - name: Checkout repo
+      - name: Checkout repository
         uses: actions/checkout@v4
 
       # ======================
@@ -39,35 +40,25 @@ jobs:
           pip install -r requirements.txt
 
       # ======================
-      # NODE + PLAYWRIGHT
+      # NODE SETUP
       # ======================
-      - name: Setup Node
+      - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: lts/*
-
-      # ✅ CACHE NPM
-      - name: Cache npm
-        uses: actions/cache@v4
-        with:
-          path: ~/.npm
-          key: ${{ runner.os }}-node-${{ hashFiles('package-lock.json') }}
+          node-version: "20"
+          cache: "npm"
 
       - name: Install Node dependencies
         run: npm ci
 
-      # ✅ CACHE PLAYWRIGHT BROWSERS
-      - name: Cache Playwright browsers
-        uses: actions/cache@v4
-        with:
-          path: ~/.cache/ms-playwright
-          key: ${{ runner.os }}-playwright
-
+      # ======================
+      # PLAYWRIGHT
+      # ======================
       - name: Install Playwright browsers
         run: npx playwright install --with-deps
 
       # ======================
-      # START STREAMLIT APP
+      # START STREAMLIT
       # ======================
       - name: Start Streamlit App
         run: |
@@ -77,20 +68,20 @@ jobs:
             --server.headless true > app.log 2>&1 &
 
       # ======================
-      # WAIT FOR APP READY
+      # WAIT FOR APP
       # ======================
-      - name: Wait for Streamlit App
+      - name: Wait for Streamlit
         run: |
           for i in {1..30}; do
-            if curl -s --fail http://127.0.0.1:8501 > /dev/null; then
-              echo "App ready"
+            if curl --silent --fail http://127.0.0.1:8501 > /dev/null; then
+              echo "✅ App ready"
               exit 0
             fi
-            echo "Waiting... $i"
+            echo "Waiting... ($i/30)"
             sleep 2
           done
 
-          echo "App failed to start"
+          echo "❌ Streamlit failed to start"
           cat app.log
           exit 1
 
@@ -101,16 +92,16 @@ jobs:
         run: npx playwright test
 
       # ======================
-      # ARTIFACTS
+      # UPLOAD REPORT
       # ======================
-      - name: Upload report
+      - name: Upload Playwright Report
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: playwright-report
           path: playwright-report/
 
-      - name: Upload logs
+      - name: Upload App Log
         if: always()
         uses: actions/upload-artifact@v4
         with:
