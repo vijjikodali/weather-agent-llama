@@ -2,9 +2,18 @@ import os
 import re
 import requests
 import streamlit as st
-from databricks import sql
+from database import get_db_connection
 from groq import Groq
 
+from config import (
+    OPENWEATHER_API_KEY,
+    DATABRICKS_TOKEN,
+    DATABRICKS_HOST,
+    DATABRICKS_HTTP_PATH,
+    GROQ_API_KEY,
+)
+
+from validation import validate_config
 
 # ---------------- CONFIG ----------------
 ENV = os.getenv("ENV", "prod")
@@ -15,45 +24,11 @@ st.set_page_config(
     layout="centered"
 )
 
-# ---------------- SECRETS ----------------
-def get_secret(name, default=""):
-    if ENV == "ci":
-        return default
-    return st.secrets.get(name, os.getenv(name, default))
-
-OPENWEATHER_API_KEY = get_secret("OPENWEATHER_API_KEY")
-DATABRICKS_TOKEN = get_secret("DATABRICKS_TOKEN")
-DATABRICKS_HOST = get_secret("DATABRICKS_HOST")
-DATABRICKS_HTTP_PATH = get_secret("DATABRICKS_HTTP_PATH")
-GROQ_API_KEY = get_secret("GROQ_API_KEY")
+# Validate configuration before starting the app
+validate_config()
 
 # ---------------- CLIENTS ----------------
 client = Groq(api_key=GROQ_API_KEY)
-
-# ---------------- VALIDATION ----------------
-def validate():
-    missing = [k for k, v in {
-        "OPENWEATHER_API_KEY": OPENWEATHER_API_KEY,
-        "DATABRICKS_TOKEN": DATABRICKS_TOKEN,
-        "DATABRICKS_HOST": DATABRICKS_HOST,
-        "DATABRICKS_HTTP_PATH": DATABRICKS_HTTP_PATH,
-        "GROQ_API_KEY": GROQ_API_KEY
-    }.items() if not v]
-
-    if missing:
-        st.error(f"Missing secrets: {', '.join(missing)}")
-        st.stop()
-
-validate()
-
-# ---------------- DB ----------------
-def get_db_connection():
-    return sql.connect(
-        server_hostname=DATABRICKS_HOST,
-        http_path=DATABRICKS_HTTP_PATH,
-        access_token=DATABRICKS_TOKEN,
-    )
-
 # ---------------- AI ROUTER ----------------
 def route_intent(user_query):
     prompt = f"""
